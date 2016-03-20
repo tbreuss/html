@@ -35,7 +35,7 @@ echo HTML::hiddenField(["hidden"]) . HTML::tag("br");
 echo HTML::imageInput(["image"]) . HTML::tag("br");
 echo HTML::monthField(["month"]) . HTML::tag("br");
 echo HTML::passwordField(["password"]) . HTML::tag("br");
-echo HTML::numericField(["numeric"]) . HTML::tag("br");
+echo HTML::numberField(["number"]) . HTML::tag("br");
 echo HTML::rangeField(["range"]) . HTML::tag("br");
 echo HTML::weekField(["week"]) . HTML::tag("br");
 echo HTML::urlField(["url"]) . HTML::tag("br");

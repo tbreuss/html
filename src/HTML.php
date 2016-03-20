@@ -347,7 +347,7 @@ class HTML
      * @param mixed $parameters
      * @return string
      */
-    public static function numericField($parameters)
+    public static function numberField($parameters)
     {
         return self::inputField("number", $parameters);
     }
@@ -549,6 +549,43 @@ class HTML
      */
     public static function textArea($parameters)
     {
+		if (is_array($parameters)) {
+            $params = $parameters;
+		} else {
+            $params = [$parameters];
+		}
+
+		if (!isset($params[0])) {
+            if (isset($params["id"])) {
+                $params[0] = $params["id"];
+			}
+		}
+
+		$id = $params[0];
+		if (!isset($params["name"])) {
+            $params["name"] = $id;
+		} else {
+            $name = $params["name"];
+			if (empty($name)) {
+                $params["name"] = $id;
+			}
+		}
+
+		if (!isset($params["id"])) {
+            $params["id"] = $id;
+		}
+
+		if (isset($params["value"])) {
+            $content = $params["value"];
+			unset($params["value"]);
+		} else {
+            $content = self::getValue($id, $params);
+		}
+
+		$code = self::renderAttributes("<textarea", $params);
+		$code .= ">" . $content . "</textarea>";
+
+		return $code;
     }
 
     /**
@@ -719,7 +756,7 @@ class HTML
     }
 
     /**
-     * Builds a HTML tag closing tag
+     * Builds a HTML closing tag
      *
      *<code>
      * echo HTML::tagClose("script", true)
