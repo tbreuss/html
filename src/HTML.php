@@ -481,7 +481,6 @@ class HTML
         }
         if (isset($params["action"])) {
             $action = $params["action"];
-            unset($params["action"]);
         }
 
         /**
