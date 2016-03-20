@@ -8,9 +8,13 @@ class HTML
 {
     protected static $values = [];
 
+    protected static $encoding = "utf-8";
+
     protected static $documentType = 11;
 
     protected static $autoEscape = true;
+
+    protected static $escaper = null;
 
     const HTML32 = 1;
 
@@ -37,12 +41,55 @@ class HTML
     /**
      * Obtains the escaper if required
      *
+     * @param string $attribute
+     * @return null
+     */
+    public static function escapeHtmlAttr($attribute)
+    {
+        return htmlspecialchars($attribute, ENT_QUOTES, self::$encoding);
+    }
+
+    /**
+     * Obtains the 'escaper' callback if required
      * @param array $params
      * @return null
      */
-    public static function getEscaper(array $params)
+    public static function getEscaper(array $params = [])
     {
-        return null;
+        $autoescape = self::$autoEscape;
+		if (isset($params["escape"])) {
+            $autoescape = $params["escape"];
+		}
+
+        $result = null;
+
+		if ($autoescape) {
+            $result = self::getEscaperCallback();
+		}
+
+		return $result;
+    }
+
+    /**
+     * @return callable|null
+     */
+    public static function getEscaperCallback()
+    {
+        if (is_null(self::$escaper)) {
+            $callback = function($attribute) {
+                return htmlspecialchars($attribute, ENT_QUOTES, self::$encoding);
+            };
+            self::setEscaperCallback($callback);
+        }
+        return self::$escaper;
+    }
+
+    /**
+     * @param callable|bool $callback
+     */
+    public static function setEscaperCallback($callback)
+    {
+        self::$escaper = $callback;
     }
 
     /**
@@ -79,8 +126,8 @@ class HTML
                 if (is_array($value) || is_resource($value)) {
                     throw new Exception("Value at index: '" . $key . "' type: '" . gettype($value) . "' cannot be rendered");
                 }
-                if ($escaper) {
-                    $escaped = $escaper->escapeHtmlAttr($value);
+                if (is_callable($escaper)) {
+                    $escaped = call_user_func($escaper, $value);
                 } else {
                     $escaped = $value;
                 }
@@ -92,17 +139,28 @@ class HTML
     }
 
     /**
-     * Set autoescape mode in generated html
-     * @param bool $autoescape
+     * Set encoding
+     * @param $encoding
      */
-    public static function setAutoescape($autoescape)
+    public static function setEncoding($encoding)
     {
+        self::$encoding = $encoding;
+    }
+
+    /**
+     * Set autoescape mode in generated html
+     * @param bool $autoEscape
+     */
+    public static function setAutoescape($autoEscape)
+    {
+        self::$autoEscape = (bool)$autoEscape;
     }
 
     /**
      * Assigns default values to generated tags by helpers
      * @param string $name
      * @param mixed $value
+     * @throws Exception
      */
     public static function setDefault($name, $value)
     {
