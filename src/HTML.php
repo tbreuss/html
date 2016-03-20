@@ -6,6 +6,8 @@
  */
 class HTML
 {
+    protected static $values = [];
+
     protected static $documentType = 11;
 
     protected static $autoEscape = true;
@@ -99,11 +101,17 @@ class HTML
 
     /**
      * Assigns default values to generated tags by helpers
-     * @param string $id
+     * @param string $name
      * @param mixed $value
      */
-    public static function setDefault($id, $value)
+    public static function setDefault($name, $value)
     {
+        if ($value !== null) {
+            if (is_array($value) || is_object($value)) {
+                throw new Exception("Only scalar values can be assigned to UI components");
+            }
+        }
+        self::$values[$name] = $value;
     }
 
     /**
@@ -111,19 +119,24 @@ class HTML
      * @param array $values
      * @param bool $merge
      */
-    public static function setDefaults(array $values, $merge)
+    public static function setDefaults(array $values, $merge = false)
     {
+        if ($merge) {
+            self::$values = array_merge(self::$values, $values);
+        } else {
+            self::$values = $values;
+        }
     }
 
     /**
-     * Check if a helper has a default value set using HTML::setDefault or value from _POST
+     * Check if a helper has a default value using HTML::setDefault or value from _POST
      *
      * @param string $name
      * @return boolean
      */
     public static function hasValue($name)
     {
-        return false;
+        return isset(self::$values[$name]) || isset($_POST[$name]);
     }
 
     /**
@@ -136,7 +149,22 @@ class HTML
      */
     public static function getValue($name, array $params = [])
     {
-        $value = isset($_POST[$name]) ? $_POST[$name] : "";
+        $value = null;
+
+        if (isset($params["value"])) {
+
+            $value = $params["value"];
+
+        } elseif (isset($_POST[$name])) {
+
+            $value = $_POST[$name];
+
+        } elseif (isset(self::$values[$name])) {
+
+            $value = self::$values[$name];
+
+        }
+
         return $value;
     }
 
@@ -175,11 +203,11 @@ class HTML
              * Automatically assign the id if the name is not an array
              * --> Does this make sense?
              */
-            /*if (is_string($name)) {
+            if (is_string($name)) {
                 if ((strpos($name, "[") === false) && !isset($params["id"])) {
                     $params["id"] = $name;
                 }
-            }*/
+            }
 
             $params["value"] = self::getValue($name, $params);
 
@@ -241,11 +269,11 @@ class HTML
          * Automatically assign the id if the name is not an array
          * --> Does this make sense?
          */
-        /*if (false === strpos($id, "[")) {
+        if (false === strpos($id, "[")) {
             if (!isset($params["id"])) {
                 $params["id"] = $id;
             }
-        }*/
+        }
 
         /**
          * Automatically check inputs
