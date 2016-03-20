@@ -307,7 +307,7 @@ class HTML
     public static function select($parameters, $data)
     {
     }
-    
+
     /**
      * Builds a HTML TEXTAREA tag
      * @param mixed $parameters
@@ -333,6 +333,63 @@ class HTML
     public static function endForm()
     {
         return "</form>";
+    }
+
+
+    /**
+     * Set the document type of content
+     * @param int $doctype
+     * @return void
+     */
+    public static function setDocType($doctype)
+    {
+        if ($doctype < self::HTML32 || $doctype > self::XHTML5) {
+            self::$documentType = self::HTML5;
+        } else {
+            self::$documentType = $doctype;
+        }
+    }
+
+    /**
+     * Get the document type declaration of content
+     * @return string
+     */
+    public static function getDocType()
+    {
+        switch (self::$documentType) {
+            case 1:
+                return "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 3.2 Final//EN\">" . PHP_EOL;
+
+            case 2:
+                return "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01//EN\"" . PHP_EOL . "\t\"http://www.w3.org/TR/html4/strict.dtd\">" . PHP_EOL;
+
+            case 3:
+                return "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\"" . PHP_EOL . "\t\"http://www.w3.org/TR/html4/loose.dtd\">" . PHP_EOL;
+
+            case 4:
+                return "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Frameset//EN\"" . PHP_EOL . "\t\"http://www.w3.org/TR/html4/frameset.dtd\">" . PHP_EOL;
+
+            case 6:
+                return "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\"" . PHP_EOL . "\t\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">" . PHP_EOL;
+
+            case 7:
+                return "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"" . PHP_EOL . "\t\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">" . PHP_EOL;
+
+            case 8:
+                return "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Frameset//EN\"" . PHP_EOL . "\t\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd\">" . PHP_EOL;
+
+            case 9:
+                return "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\"" . PHP_EOL . "\t\"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\">" . PHP_EOL;
+
+            case 10:
+                return "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 2.0//EN\"" . PHP_EOL . "\t\"http://www.w3.org/MarkUp/DTD/xhtml2.dtd\">" . PHP_EOL;
+
+            case 5:
+            case 11:
+                return "<!DOCTYPE html>" . PHP_EOL;
+        }
+
+        return "";
     }
 
 }
