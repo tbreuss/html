@@ -116,7 +116,7 @@ class HTML
     }
 
     /**
-     * Check if a helper has a default value set using Phalcon\Tag::setDefault or value from _POST
+     * Check if a helper has a default value set using HTML::setDefault or value from _POST
      *
      * @param string $name
      * @return boolean
@@ -461,18 +461,18 @@ class HTML
      */
     public static function form($parameters)
     {
-		if (is_array($parameters)) {
+        if (is_array($parameters)) {
             $params = $parameters;
-		} else {
+        } else {
             $params = [$parameters];
-		}
+        }
 
-		/**
+        /**
          * By default the method is POST
          */
-		if (!isset($params["method"])) {
+        if (!isset($params["method"])) {
             $params["method"] = "post";
-		}
+        }
 
         $action = "";
         if (isset($params[0])) {
@@ -484,21 +484,21 @@ class HTML
             unset($params["action"]);
         }
 
-		/**
+        /**
          * Check for extra parameters
          */
-		if (isset($params["parameters"])) {
+        if (isset($params["parameters"])) {
             $action .= "?" . $params["parameters"];
-		}
+        }
 
-		if (!empty($action)) {
+        if (!empty($action)) {
             $params["action"] = $action;
-		}
+        }
 
-		$code = self::renderAttributes("<form", $params);
+        $code = self::renderAttributes("<form", $params);
         $code .= ">";
 
-		return $code;
+        return $code;
     }
 
     /**
