@@ -33,12 +33,60 @@ class HTML
     const XHTML5 = 11;
 
     /**
+     * Obtains the escaper if required
+     *
+     * @param array $params
+     * @return null
+     */
+    public static function getEscaper(array $params)
+    {
+        return null;
+    }
+
+    /**
      * Renders parameters keeping order in their HTML attributes
-     * @param $code
+     * @param string $code
      * @param array $attributes
+     * @return string
+     * @throws Exception
      */
     public static function renderAttributes($code, array $attributes = [])
     {
+        $order = ["rel", "type", "for", "src", "href", "action", "id", "name", "value", "class"];
+
+        $attrs = [];
+
+        foreach ($order as $key) {
+            if (isset($attributes[$key])) {
+                $attrs[$key] = $attributes[$key];
+            }
+        }
+
+        foreach ($attributes as $key => $value) {
+            if (!isset($attrs[$key])) {
+                $attrs[$key] = $value;
+            }
+        }
+
+        $escaper = self::getEscaper($attributes);
+        unset ($attrs["escape"]);
+
+        $newCode = $code;
+        foreach ($attrs as $key => $value) {
+            if (is_string($key) && ($value !== null)) {
+                if (is_array($value) || is_resource($value)) {
+                    throw new Exception("Value at index: '" . $key . "' type: '" . gettype($value) . "' cannot be rendered");
+                }
+                if ($escaper) {
+                    $escaped = $escaper->escapeHtmlAttr($value);
+                } else {
+                    $escaped = $value;
+                }
+                $newCode .= " " . $key . "=\"" . $escaped . "\"";
+            }
+        }
+
+        return $newCode;
     }
 
     /**
@@ -68,6 +116,31 @@ class HTML
     }
 
     /**
+     * Check if a helper has a default value set using Phalcon\Tag::setDefault or value from _POST
+     *
+     * @param string $name
+     * @return boolean
+     */
+    public static function hasValue($name)
+    {
+        return false;
+    }
+
+    /**
+     * Every helper calls this function to check whether a component has a predefined
+     * value using self::setDefault or value from _POST
+     *
+     * @param string $name
+     * @param array $params
+     * @return mixed
+     */
+    public static function getValue($name, array $params = [])
+    {
+        $value = isset($_POST[$name]) ? $_POST[$name] : "";
+        return $value;
+    }
+
+    /**
      * Builds generic INPUT tags
      * @param string $type
      * @param mixed $parameters
@@ -76,6 +149,63 @@ class HTML
      */
     protected static function inputField($type, $parameters, $asValue = false)
     {
+        $id = null;
+
+        if (is_array($parameters)) {
+            $params = $parameters;
+        } else {
+            $params = [$parameters];
+        }
+
+        if ($asValue == false) {
+
+            if (!isset($params[0])) {
+                $params[0] = $params["id"];
+            }
+
+            /*if (fetch name, params["name"])) {
+                if (empty($name)) {
+                    $params["name"] = id;
+                }
+            } else {
+                $params["name"] = id;
+            }*/
+
+            /**
+             * Automatically assign the id if the name is not an array
+             */
+            /*if (is_string($id)) {
+                if (!memstr(id, "[") && !isset params["id"]) {
+                    $params["id"] = $id;
+                }
+			}*/
+
+            $params["value"] = self::getValue($id, $params);
+
+        } else {
+            /**
+             * Use the "id" as value if the user hadn't set it
+             */
+            if (!isset($params["value"])) {
+                if (isset($params[0])) {
+                    $params["value"] = $params[0];
+                }
+            }
+        }
+
+        $params["type"] = $type;
+        $code = self::renderAttributes("<input", $params);
+
+        /**
+         * Check if Doctype is XHTML
+         */
+        if (self::$documentType > self::HTML5) {
+            $code .= " />";
+        } else {
+            $code .= ">";
+        }
+
+        return $code;
     }
 
     /**
@@ -86,6 +216,7 @@ class HTML
      */
     protected static function inputFieldChecked($type, $parameters)
     {
+        return $type;
     }
 
     /**
@@ -319,11 +450,55 @@ class HTML
 
     /**
      * Builds a HTML FORM tag
+     *
+     * <code>
+     * echo HTML::form("posts/save");
+     * echo HTML::form(array("posts/save", "method" => "post"));
+     * </code>
+     *
      * @param mixed $parameters
      * @return string
      */
     public static function form($parameters)
     {
+		if (is_array($parameters)) {
+            $params = $parameters;
+		} else {
+            $params = [$parameters];
+		}
+
+		/**
+         * By default the method is POST
+         */
+		if (!isset($params["method"])) {
+            $params["method"] = "post";
+		}
+
+        $action = "";
+        if (isset($params[0])) {
+            $action = $params[0];
+            unset($params[0]);
+        }
+        if (isset($params["action"])) {
+            $action = $params["action"];
+            unset($params["action"]);
+        }
+
+		/**
+         * Check for extra parameters
+         */
+		if (isset($params["parameters"])) {
+            $action .= "?" . $params["parameters"];
+		}
+
+		if (!empty($action)) {
+            $params["action"] = $action;
+		}
+
+		$code = self::renderAttributes("<form", $params);
+        $code .= ">";
+
+		return $code;
     }
 
     /**
@@ -390,6 +565,74 @@ class HTML
         }
 
         return "";
+    }
+
+    /**
+     * Builds a HTML tag
+     *
+     *<code>
+     * echo HTML::tag(name, parameters, selfClose, onlyStart, eol);
+     *</code>
+     *
+     * @param string $tagName
+     * @param null $parameters
+     * @param bool $selfClose
+     * @param bool $onlyStart
+     * @param bool $useEol
+     * @return string
+     * @throws Exception
+     */
+    public static function tag($tagName, $parameters = null, $selfClose = false, $onlyStart = false, $useEol = false)
+    {
+        if (is_array($parameters)) {
+            $params = $parameters;
+        } else {
+            $params = [$parameters];
+        }
+
+        $localCode = self::renderAttributes("<" . $tagName, $params);
+
+        /**
+         * Check if Doctype is XHTML
+         */
+        if (self::$documentType > self::HTML5) {
+            if ($selfClose) {
+                $localCode .= " />";
+            } else {
+                $localCode .= ">";
+            }
+        } else {
+            if ($onlyStart) {
+                $localCode .= ">";
+            } else {
+                $localCode .= "></" . $tagName . ">";
+            }
+        }
+
+        if ($useEol) {
+            $localCode .= PHP_EOL;
+        }
+
+        return $localCode;
+    }
+
+    /**
+     * Builds a HTML tag closing tag
+     *
+     *<code>
+     * echo HTML::tagClose("script", true)
+     *</code>
+     *
+     * @param string $tagName
+     * @param bool $useEol
+     * @return string
+     */
+    public static function tagClose($tagName, $useEol = false)
+    {
+        if ($useEol) {
+            return "</" . $tagName . ">" . PHP_EOL;
+        }
+        return "</" . $tagName . ">";
     }
 
 }
