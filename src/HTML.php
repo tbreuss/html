@@ -149,8 +149,6 @@ class HTML
      */
     protected static function inputField($type, $parameters, $asValue = false)
     {
-        $id = null;
-
         if (is_array($parameters)) {
             $params = $parameters;
         } else {
@@ -159,28 +157,31 @@ class HTML
 
         if ($asValue == false) {
 
-            if (!isset($params[0])) {
-                $params[0] = $params["id"];
+            $name = $params[0] ?: null;
+
+            if (is_null($name)) {
+                $params[0] = $params["id"] ?: null;
             }
 
-            /*if (fetch name, params["name"])) {
-                if (empty($name)) {
-                    $params["name"] = id;
+            if (isset($params["name"])) {
+                if (empty($params["name"])) {
+                    $params["name"] = $name;
                 }
             } else {
-                $params["name"] = id;
-            }*/
+                $params["name"] = $name;
+            }
 
             /**
              * Automatically assign the id if the name is not an array
+             * --> Does this make sense?
              */
-            /*if (is_string($id)) {
-                if (!memstr(id, "[") && !isset params["id"]) {
-                    $params["id"] = $id;
+            /*if (is_string($name)) {
+                if ((strpos($name, "[") === false) && !isset($params["id"])) {
+                    $params["id"] = $name;
                 }
-			}*/
+            }*/
 
-            $params["value"] = self::getValue($id, $params);
+            $params["value"] = self::getValue($name, $params);
 
         } else {
             /**
@@ -216,7 +217,81 @@ class HTML
      */
     protected static function inputFieldChecked($type, $parameters)
     {
-        return $type;
+        if (is_array($parameters)) {
+            $params = $parameters;
+        } else {
+            $params = [$parameters];
+        }
+
+        if (!isset($params[0])) {
+            $params[0] = $params["id"];
+        }
+
+        $id = $params[0];
+        if (!isset($params["name"])) {
+            $params["name"] = $id;
+        } else {
+            $name = $params["name"];
+            if (empty($name)) {
+                $params["name"] = $id;
+            }
+        }
+
+        /**
+         * Automatically assign the id if the name is not an array
+         * --> Does this make sense?
+         */
+        /*if (false === strpos($id, "[")) {
+            if (!isset($params["id"])) {
+                $params["id"] = $id;
+            }
+        }*/
+
+        /**
+         * Automatically check inputs
+         */
+        if (isset($params["value"])) {
+
+            $currentValue = $params["value"];
+            unset($params["value"]);
+
+            $value = self::getValue($id, $params);
+
+            if ($value && ($currentValue == $value)) {
+                $params["checked"] = "checked";
+            }
+            $params["value"] = $currentValue;
+
+        } else {
+
+            $value = self::getValue($id, $params);
+
+            /**
+             * Evaluate the value in POST
+             */
+            if ($value) {
+                $params["checked"] = "checked";
+            }
+
+            /**
+             * Update the value anyways
+             */
+            $params["value"] = $value;
+        }
+
+        $params["type"] = $type;
+        $code = self::renderAttributes("<input", $params);
+
+        /**
+         * Check if Doctype is XHTML
+         */
+        if (self::$documentType > self::HTML5) {
+            $code .= " />";
+        } else {
+            $code .= ">";
+        }
+
+        return $code;
     }
 
     /**

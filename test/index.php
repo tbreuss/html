@@ -15,25 +15,26 @@ if (!empty($_POST)) {
 }
 
 echo HTML::form(["index.php", "method" => "post"]);
-echo HTML::dateField(["date", "name" => "date"]) . HTML::tag("br");
-echo HTML::dateTimeField(['dateTime', "name" => "dateTime"]) . HTML::tag("br");
-echo HTML::colorField(['color', "name" => "color"]) . HTML::tag("br");
-echo HTML::dateTimeLocalField(['dateTimeLocalField', "name" => "dateTimeLocalField"]) . HTML::tag("br");
-echo HTML::checkField(["check", "name" => "check"]) . HTML::tag("br");
-echo HTML::emailField(["email", "name" => "email"]) . HTML::tag("br");
-echo HTML::fileField(["file", "name" => "file"]) . HTML::tag("br");
-echo HTML::hiddenField(["hidden", "name" => "hidden"]) . HTML::tag("br");
-echo HTML::imageInput(["image", "name" => "image"]) . HTML::tag("br");
-echo HTML::monthField(["month", "name" => "month"]) . HTML::tag("br");
-echo HTML::passwordField(["password", "name" => "password"]) . HTML::tag("br");
-echo HTML::numericField(["numeric", "name" => "numeric"]) . HTML::tag("br");
-echo HTML::rangeField(["range", "name" => "range"]) . HTML::tag("br");
-echo HTML::weekField(["week", "name" => "week"]) . HTML::tag("br");
-echo HTML::urlField(["url", "name" => "url"]) . HTML::tag("br");
-echo HTML::timeField(["time", "name" => "time"]) . HTML::tag("br");
-echo HTML::textField(["text", "name" => "text"]) . HTML::tag("br");
-echo HTML::textArea(["textArea", "name" => "textArea"]) . HTML::tag("br");
-echo HTML::searchField(["search", "name" => "search"]) . HTML::tag("br");
+echo HTML::dateField(["date"]) . HTML::tag("br");
+echo HTML::dateTimeField(['dateTime']) . HTML::tag("br");
+echo HTML::colorField(['color']) . HTML::tag("br");
+echo HTML::dateTimeLocalField(['dateTimeLocalField']) . HTML::tag("br");
+echo HTML::checkField(["check", "value" => "yes"]) . HTML::tag("br");
+echo HTML::radioField(["radio", "value" => "yes"]) . HTML::radioField(["radio", "value" => "no"]) . HTML::tag("br");
+echo HTML::emailField(["email"]) . HTML::tag("br");
+echo HTML::fileField(["file"]) . HTML::tag("br");
+echo HTML::hiddenField(["hidden"]) . HTML::tag("br");
+echo HTML::imageInput(["image"]) . HTML::tag("br");
+echo HTML::monthField(["month"]) . HTML::tag("br");
+echo HTML::passwordField(["password"]) . HTML::tag("br");
+echo HTML::numericField(["numeric"]) . HTML::tag("br");
+echo HTML::rangeField(["range"]) . HTML::tag("br");
+echo HTML::weekField(["week"]) . HTML::tag("br");
+echo HTML::urlField(["url"]) . HTML::tag("br");
+echo HTML::timeField(["time"]) . HTML::tag("br");
+echo HTML::textField(["text"]) . HTML::tag("br");
+echo HTML::textArea(["textArea"]) . HTML::tag("br");
+echo HTML::searchField(["search"]) . HTML::tag("br");
 echo HTML::submitButton(["submit"]) . HTML::tag("br");
 echo HTML::endForm();
 
