@@ -57,17 +57,17 @@ class HTML
     public static function getEscaper(array $params = [])
     {
         $autoescape = self::$autoEscape;
-		if (isset($params["escape"])) {
+        if (isset($params["escape"])) {
             $autoescape = $params["escape"];
-		}
+        }
 
         $result = null;
 
-		if ($autoescape) {
+        if ($autoescape) {
             $result = self::getEscaperCallback();
-		}
+        }
 
-		return $result;
+        return $result;
     }
 
     /**
@@ -76,7 +76,7 @@ class HTML
     public static function getEscaperCallback()
     {
         if (is_null(self::$escaper)) {
-            $callback = function($attribute) {
+            $callback = function ($attribute) {
                 return htmlspecialchars($attribute, ENT_QUOTES, self::$encoding);
             };
             self::setEscaperCallback($callback);
@@ -593,12 +593,93 @@ class HTML
     /**
      * Builds a HTML SELECT tag using a PHP array for options
      * @param mixed $parameters
-     * @param mixed $data
+     * @param array $options
      * @return string
      */
-    public static function select($parameters, $data)
+    public static function select($parameters, $options)
     {
+        $params = self::processFormElementParams($parameters);
+
+
+        if (isset($params["value"])) {
+            $value = $params["value"];
+            unset($params["value"]);
+        } else {
+            $name = $params["name"];
+            $value = self::getValue($name, $params);
+        }
+
+        $useEmpty = "";
+        $emptyValue = "";
+        $emptyText = "";
+
+        if (isset($params["useEmpty"])) {
+            $useEmpty = $params["useEmpty"];
+            if (isset($params["emptyValue"])) {
+                $emptyValue = $params["emptyValue"];
+                unset($params["emptyValue"]);
+            }
+            if (isset($params["emptyText"])) {
+                $emptyText = $params["emptyText"];
+                unset($params["emptyText"]);
+            } else {
+                $emptyText = "Choose...";
+            }
+            unset($params["useEmpty"]);
+        }
+
+        $code = self::renderAttributes("<select", $params) . ">" . PHP_EOL;
+
+        if ($useEmpty) {
+            $code .= "\t<option value=\"" . $emptyValue . "\">" . $emptyText . "</option>" . PHP_EOL;
+		}
+
+        $code .= self::optionsFromArray($options, $value, "</option>" . PHP_EOL);
+        $code .= "</select>";
+
+        return $code;
     }
+
+    /**
+     * Generate the OPTION tags based on an array
+     * @param array $data
+     * @param string $value
+     * @param string $closeOption
+     * @return string
+     */
+    public static function optionsFromArray(array $data, $value, $closeOption)
+	{
+		$code = "";
+
+		foreach ($data as $optionValue => $optionText) {
+
+			$escaped = htmlspecialchars($optionValue);
+
+			if (is_array($optionText)) {
+				$code .= "\t<optgroup label=\"" . $escaped . "\">" . PHP_EOL . self::optionsFromArray($optionText, $value, $closeOption) . "\t</optgroup>" . PHP_EOL;
+				continue;
+			}
+
+            if (is_array($value)) {
+                if(in_array($optionValue, $value)) {
+                    $code .= "\t<option selected=\"selected\" value=\"" . $escaped . "\">" . $optionText . $closeOption;
+                } else {
+                    $code .= "\t<option value=\"" . $escaped . "\">" . $optionText . $closeOption;
+                }
+            } else {
+                $strOptionValue = (string) $optionValue;
+				$strValue = (string) $value;
+
+				if ($strOptionValue === $strValue) {
+                    $code .= "\t<option selected=\"selected\" value=\"" . $escaped . "\">" . $optionText . $closeOption;
+				} else {
+                    $code .= "\t<option value=\"" . $escaped . "\">" . $optionText . $closeOption;
+				}
+			}
+		}
+
+		return $code;
+	}
 
     /**
      * Builds a HTML TEXTAREA tag
@@ -607,43 +688,61 @@ class HTML
      */
     public static function textArea($parameters)
     {
-		if (is_array($parameters)) {
-            $params = $parameters;
-		} else {
-            $params = [$parameters];
-		}
+        $params = self::processFormElementParams($parameters);
 
-		if (!isset($params[0])) {
+        $name = $params["name"];
+
+        if (isset($params["value"])) {
+            $content = $params["value"];
+            unset($params["value"]);
+        } else {
+            $content = self::getValue($name, $params);
+        }
+
+        $code = self::renderAttributes("<textarea", $params);
+        $code .= ">" . $content . "</textarea>";
+
+        return $code;
+    }
+
+    /**
+     * Process the parameters for a form element
+     * @param mixed $parameters
+     * @return array
+     */
+    protected static function processFormElementParams($parameters)
+    {
+        if (is_array($parameters)) {
+            $params = $parameters;
+        } else {
+            $params = [$parameters];
+        }
+
+        if (!isset($params[0])) {
             if (isset($params["id"])) {
                 $params[0] = $params["id"];
-			}
-		}
+            }
+        }
 
-		$id = $params[0];
-		if (!isset($params["name"])) {
+        $id = $params[0]; // throw exception if key not exist?
+
+        /**
+         * Automatically assign the id if the name is not an array
+         * --> Does this make sense?
+         */
+        if (!isset($params["id"])) {
+            if (false === strpos($id, "[")) {
+                $params["id"] = $id;
+            }
+        }
+
+        if (!isset($params["name"])) {
             $params["name"] = $id;
-		} else {
-            $name = $params["name"];
-			if (empty($name)) {
-                $params["name"] = $id;
-			}
-		}
+        }
 
-		if (!isset($params["id"])) {
-            $params["id"] = $id;
-		}
+        #$params["value"] = self::getValue($id, $params);
 
-		if (isset($params["value"])) {
-            $content = $params["value"];
-			unset($params["value"]);
-		} else {
-            $content = self::getValue($id, $params);
-		}
-
-		$code = self::renderAttributes("<textarea", $params);
-		$code .= ">" . $content . "</textarea>";
-
-		return $code;
+        return $params;
     }
 
     /**

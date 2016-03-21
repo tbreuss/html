@@ -19,7 +19,8 @@ HTML::setDefaults([
     "dateTime" => "2018-02-01 03:04",
     "dateTimeLocalField" => "2018-02-01T03:04",
     "color" => "#ff0000",
-    "text", "Text"
+    "text" => "Text",
+    "select" => 4
 ]);
 
 echo HTML::form(["index.php", "method" => "post"]);
@@ -43,6 +44,7 @@ echo HTML::timeField(["time"]) . HTML::tag("br");
 echo HTML::textField(["text"]) . HTML::tag("br");
 echo HTML::textArea(["textArea"]) . HTML::tag("br");
 echo HTML::searchField(["search"]) . HTML::tag("br");
+echo HTML::select(["select", "useEmpty" => true, "emptyValue" => -1, "emptyText" => "Bitte wählen"], ["a", "b", "c", "d", "e", "f", "g"]) . HTML::tag("br");
 echo HTML::submitButton(["submit"]) . HTML::tag("br");
 echo HTML::endForm();
 
