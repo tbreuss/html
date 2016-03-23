@@ -123,7 +123,7 @@ class HTML
         $newCode = $code;
         foreach ($attrs as $key => $value) {
             if (is_string($key) && ($value !== null)) {
-                if (is_array($value) || is_resource($value)) {
+                if (!is_scalar($value)) {
                     throw new Exception("Value at index: '" . $key . "' type: '" . gettype($value) . "' cannot be rendered");
                 }
                 if (is_callable($escaper)) {
@@ -164,12 +164,12 @@ class HTML
      */
     public static function setDefault($name, $value)
     {
-        if ($value !== null) {
-            if (is_array($value) || is_object($value)) {
-                throw new Exception("Only scalar values can be assigned to UI components");
-            }
+        if (!(is_scalar($value) || is_array($value))) {
+            throw new Exception("Only scalar and array values can be assigned to UI components (" . gettype($value) . " given).");
         }
-        self::$values[$name] = $value;
+        if ($value !== null) {
+            self::$values[$name] = $value;
+        }
     }
 
     /**
@@ -179,10 +179,11 @@ class HTML
      */
     public static function setDefaults(array $values, $merge = false)
     {
-        if ($merge) {
-            self::$values = array_merge(self::$values, $values);
-        } else {
-            self::$values = $values;
+        if (false === $merge) {
+            self::$values = [];
+        }
+        foreach ($values as $name => $value) {
+            self::setDefault($name, $value);
         }
     }
 
@@ -207,23 +208,76 @@ class HTML
      */
     public static function getValue($name, array $params = [])
     {
-        $value = null;
+        $value = "";
 
         if (isset($params["value"])) {
 
+            // an explicit element value
             $value = $params["value"];
 
-        } elseif (isset($_POST[$name])) {
+        } elseif (!empty($_POST)) {
 
-            $value = $_POST[$name];
+            // a POST value
+            $value = self::resolveValue($name, $_POST);
 
-        } elseif (isset(self::$values[$name])) {
+        } else {
 
-            $value = self::$values[$name];
+            // a previously set default value
+            $value = self::resolveValue($name, self::$values);
 
         }
 
         return $value;
+    }
+
+    /**
+     * Evaluates the value by given name and data (context).
+     * @param string $name
+     * @param array $data
+     * @return mixed|null
+     */
+    protected static function resolveValue($name, array $data)
+    {
+        if (($pos = strpos($name, '[')) !== false) {
+            if ($pos === 0) // [a]name[b][c], should ignore [a]
+            {
+                if (preg_match('/\](\w+(\[.+)?)/', $name, $matches)) {
+                    $name = $matches[1]; // we get: name[b][c]
+                }
+                if (($pos = strpos($name, '[')) === false) {
+                    return $data[$name];
+                }
+            }
+
+            $value = self::fetch($data, substr($name, 0, $pos));
+
+            foreach (explode('][', rtrim(substr($name, $pos + 1), ']')) as $id) {
+                if (is_array($value) && isset($value[$id])) {
+                    $value = $value[$id];
+                } elseif (strlen($id) == 0) {
+                    return $value;
+                } else {
+                    return null;
+                }
+            }
+            return $value;
+        } else {
+            return self::fetch($data, $name);
+        }
+    }
+
+    /**
+     * @param array $data
+     * @param string $key
+     * @param mixed $default
+     * @return mixed|null
+     */
+    protected static function fetch(array $data, $key, $default = null)
+    {
+        if (isset($data[$key])) {
+            return $data[$key];
+        }
+        return $default;
     }
 
     /**
@@ -575,9 +629,29 @@ class HTML
      * @param mixed $parameters
      * @return string
      */
-    public static function imageInput($parameters)
+    public static function imageButton($parameters)
     {
         return self::inputField("image", $parameters, true);
+    }
+
+    /**
+     * Builds a HTML input[type="button"] tag
+     * @param mixed $parameters
+     * @return string
+     */
+    public static function pushButton($parameters)
+    {
+        return self::inputField("button", $parameters, true);
+    }
+
+    /**
+     * Builds a HTML input[type="reset"] tag
+     * @param mixed $parameters
+     * @return string
+     */
+    public static function resetButton($parameters)
+    {
+        return self::inputField("reset", $parameters, true);
     }
 
     /**
@@ -628,13 +702,13 @@ class HTML
             unset($params["useEmpty"]);
         }
 
-        $code = self::renderAttributes("<select", $params) . ">" . PHP_EOL;
+        $code = self::renderAttributes("<select", $params) . ">";
 
         if ($useEmpty) {
-            $code .= "\t<option value=\"" . $emptyValue . "\">" . $emptyText . "</option>" . PHP_EOL;
-		}
+            $code .= "<option value=\"" . $emptyValue . "\">" . $emptyText . "</option>";
+        }
 
-        $code .= self::optionsFromArray($options, $value, "</option>" . PHP_EOL);
+        $code .= self::optionsFromArray($options, $value, "</option>");
         $code .= "</select>";
 
         return $code;
@@ -648,38 +722,39 @@ class HTML
      * @return string
      */
     public static function optionsFromArray(array $data, $value, $closeOption)
-	{
-		$code = "";
+    {
 
-		foreach ($data as $optionValue => $optionText) {
+        $code = "";
 
-			$escaped = htmlspecialchars($optionValue);
+        foreach ($data as $optionValue => $optionText) {
 
-			if (is_array($optionText)) {
-				$code .= "\t<optgroup label=\"" . $escaped . "\">" . PHP_EOL . self::optionsFromArray($optionText, $value, $closeOption) . "\t</optgroup>" . PHP_EOL;
-				continue;
-			}
+            $escaped = htmlspecialchars($optionValue);
+
+            if (is_array($optionText)) {
+                $code .= "<optgroup label=\"" . $escaped . "\">" . self::optionsFromArray($optionText, $value, $closeOption) . "</optgroup>";
+                continue;
+            }
 
             if (is_array($value)) {
-                if(in_array($optionValue, $value)) {
-                    $code .= "\t<option selected=\"selected\" value=\"" . $escaped . "\">" . $optionText . $closeOption;
+                if (in_array($optionValue, $value)) {
+                    $code .= "<option selected=\"selected\" value=\"" . $escaped . "\">" . $optionText . $closeOption;
                 } else {
-                    $code .= "\t<option value=\"" . $escaped . "\">" . $optionText . $closeOption;
+                    $code .= "<option value=\"" . $escaped . "\">" . $optionText . $closeOption;
                 }
             } else {
-                $strOptionValue = (string) $optionValue;
-				$strValue = (string) $value;
+                $strOptionValue = (string)$optionValue;
+                $strValue = (string)$value;
 
-				if ($strOptionValue === $strValue) {
-                    $code .= "\t<option selected=\"selected\" value=\"" . $escaped . "\">" . $optionText . $closeOption;
-				} else {
-                    $code .= "\t<option value=\"" . $escaped . "\">" . $optionText . $closeOption;
-				}
-			}
-		}
+                if ($strOptionValue === $strValue) {
+                    $code .= "<option selected=\"selected\" value=\"" . $escaped . "\">" . $optionText . $closeOption;
+                } else {
+                    $code .= "<option value=\"" . $escaped . "\">" . $optionText . $closeOption;
+                }
+            }
+        }
 
-		return $code;
-	}
+        return $code;
+    }
 
     /**
      * Builds a HTML TEXTAREA tag
