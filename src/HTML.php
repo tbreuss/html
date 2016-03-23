@@ -6,7 +6,7 @@
  */
 class HTML
 {
-    protected static $values = [];
+    protected static $defaults = [];
 
     protected static $encoding = "utf-8";
 
@@ -39,20 +39,12 @@ class HTML
     const XHTML5 = 11;
 
     /**
-     * Obtains the escaper if required
+     * Obtains the 'escaper' callback if required. If no escaper was registered
+     * a default escaper will be returned. So if you wish to use NO escaper, you
+     * have to explicitly disable the escaper by calling setEscaper(null);
      *
-     * @param string $attribute
-     * @return null
-     */
-    public static function escapeHtmlAttr($attribute)
-    {
-        return htmlspecialchars($attribute, ENT_QUOTES, self::$encoding);
-    }
-
-    /**
-     * Obtains the 'escaper' callback if required
      * @param array $params
-     * @return null
+     * @return callable|null
      */
     public static function getEscaper(array $params = [])
     {
@@ -61,39 +53,41 @@ class HTML
             $autoescape = $params["escape"];
         }
 
-        $result = null;
-
         if ($autoescape) {
-            $result = self::getEscaperCallback();
+
+            if (is_null(self::$escaper)) {
+                // Register the default escaper
+                $callback = function ($attribute) {
+                    return htmlspecialchars($attribute, ENT_QUOTES, self::$encoding);
+                };
+                self::setEscaper($callback);
+            }
+
         }
 
-        return $result;
-    }
-
-    /**
-     * @return callable|null
-     */
-    public static function getEscaperCallback()
-    {
-        if (is_null(self::$escaper)) {
-            $callback = function ($attribute) {
-                return htmlspecialchars($attribute, ENT_QUOTES, self::$encoding);
-            };
-            self::setEscaperCallback($callback);
-        }
         return self::$escaper;
     }
 
     /**
-     * @param callable|bool $callback
+     * Set the escaper. If param $callback is NULL an callback is registered as a "null" callback.
+     *
+     * @param callable|null $callback
+     * @throws Exception
      */
-    public static function setEscaperCallback($callback)
+    public static function setEscaper($callback)
     {
+        if (is_null($callback)) {
+            $callback = function ($value) { return $value; };
+        }
+        if (!is_callable($callback)) {
+            throw new Exception('Param $callback is not callable.');
+        }
         self::$escaper = $callback;
     }
 
     /**
      * Renders parameters keeping order in their HTML attributes
+     *
      * @param string $code
      * @param array $attributes
      * @return string
@@ -117,21 +111,22 @@ class HTML
             }
         }
 
-        $escaper = self::getEscaper($attributes);
+        $escaperCallback = self::getEscaper($attributes);
         unset ($attrs["escape"]);
 
         $newCode = $code;
         foreach ($attrs as $key => $value) {
-            if (is_string($key) && ($value !== null)) {
+            if (is_null($value)) {
+                continue;
+            }
+            if (is_string($key)) {
                 if (!is_scalar($value)) {
                     throw new Exception("Value at index: '" . $key . "' type: '" . gettype($value) . "' cannot be rendered");
                 }
-                if (is_callable($escaper)) {
-                    $escaped = call_user_func($escaper, $value);
-                } else {
-                    $escaped = $value;
-                }
+                $escaped = call_user_func($escaperCallback, $value);
                 $newCode .= " " . $key . "=\"" . $escaped . "\"";
+            } elseif (is_numeric($key)) {
+                $newCode .= " " . $value;
             }
         }
 
@@ -140,6 +135,7 @@ class HTML
 
     /**
      * Set encoding
+     *
      * @param $encoding
      */
     public static function setEncoding($encoding)
@@ -149,6 +145,7 @@ class HTML
 
     /**
      * Set autoescape mode in generated html
+     *
      * @param bool $autoEscape
      */
     public static function setAutoescape($autoEscape)
@@ -158,6 +155,7 @@ class HTML
 
     /**
      * Assigns default values to generated tags by helpers
+     *
      * @param string $name
      * @param mixed $value
      * @throws Exception
@@ -168,23 +166,34 @@ class HTML
             throw new Exception("Only scalar and array values can be assigned to UI components (" . gettype($value) . " given).");
         }
         if ($value !== null) {
-            self::$values[$name] = $value;
+            self::$defaults[$name] = $value;
         }
     }
 
     /**
      * Assigns default values to generated tags by helpers
-     * @param array $values
+     *
+     * @param array $defaults
      * @param bool $merge
      */
-    public static function setDefaults(array $values, $merge = false)
+    public static function setDefaults(array $defaults, $merge = false)
     {
         if (false === $merge) {
-            self::$values = [];
+            self::$defaults = [];
         }
-        foreach ($values as $name => $value) {
+        foreach ($defaults as $name => $value) {
             self::setDefault($name, $value);
         }
+    }
+
+    /**
+     * Return all default values
+     *
+     * @return array
+     */
+    public static function getDefaults()
+    {
+        return self::$defaults;
     }
 
     /**
@@ -195,7 +204,8 @@ class HTML
      */
     public static function hasValue($name)
     {
-        return isset(self::$values[$name]) || isset($_POST[$name]);
+        $value = self::getValue($name);
+        return $value !== null;
     }
 
     /**
@@ -208,7 +218,7 @@ class HTML
      */
     public static function getValue($name, array $params = [])
     {
-        $value = "";
+        $value = null;
 
         if (isset($params["value"])) {
 
@@ -223,7 +233,7 @@ class HTML
         } else {
 
             // a previously set default value
-            $value = self::resolveValue($name, self::$values);
+            $value = self::resolveValue($name, self::$defaults);
 
         }
 
@@ -231,7 +241,8 @@ class HTML
     }
 
     /**
-     * Evaluates the value by given name and data (context).
+     * Evaluate the value from the data (i.e. $_POST or $defaults)
+     *
      * @param string $name
      * @param array $data
      * @return mixed|null
@@ -267,6 +278,8 @@ class HTML
     }
 
     /**
+     * Fetch an array value, return null if key doesn't exist
+     *
      * @param array $data
      * @param string $key
      * @param mixed $default
@@ -281,7 +294,8 @@ class HTML
     }
 
     /**
-     * Builds generic INPUT tags
+     * Builds a generic INPUT tag
+     *
      * @param string $type
      * @param mixed $parameters
      * @param bool $asValue
@@ -334,6 +348,7 @@ class HTML
             }
         }
 
+        unset($params[0]);
         $params["type"] = $type;
         $code = self::renderAttributes("<input", $params);
 
@@ -350,7 +365,8 @@ class HTML
     }
 
     /**
-     * Builds INPUT tags that implements the checked attribute
+     * Builds an INPUT tag that implements the checked attribute
+     *
      * @param string $type
      * @param mixed $parameters
      * @return string
@@ -419,6 +435,7 @@ class HTML
             $params["value"] = $value;
         }
 
+        unset($params[0]);
         $params["type"] = $type;
         $code = self::renderAttributes("<input", $params);
 
@@ -436,6 +453,7 @@ class HTML
 
     /**
      * Builds a HTML input[type="color"] tag
+     *
      * @param mixed $parameters
      * @return string
      */
@@ -446,6 +464,7 @@ class HTML
 
     /**
      * Builds a HTML input[type="text"] tag
+     *
      * @param mixed $parameters
      * @return string
      */
@@ -456,6 +475,7 @@ class HTML
 
     /**
      * Builds a HTML input[type="number"] tag
+     *
      * @param mixed $parameters
      * @return string
      */
@@ -466,6 +486,7 @@ class HTML
 
     /**
      * Builds a HTML input[type="range"] tag
+     *
      * @param mixed $parameters
      * @return string
      */
@@ -476,6 +497,7 @@ class HTML
 
     /**
      * Builds a HTML input[type="email"] tag
+     *
      * @param mixed $parameters
      * @return string
      */
@@ -486,6 +508,7 @@ class HTML
 
     /**
      * Builds a HTML input[type="date"] tag
+     *
      * @param mixed $parameters
      * @return string
      */
@@ -496,6 +519,7 @@ class HTML
 
     /**
      * Builds a HTML input[type="datetime"] tag
+     *
      * @param mixed $parameters
      * @return string
      */
@@ -506,6 +530,7 @@ class HTML
 
     /**
      * Builds a HTML input[type="datetime-local"] tag
+     *
      * @param mixed $parameters
      * @return string
      */
@@ -516,6 +541,7 @@ class HTML
 
     /**
      * Builds a HTML input[type="month"] tag
+     *
      * @param mixed $parameters
      * @return string
      */
@@ -526,6 +552,7 @@ class HTML
 
     /**
      * Builds a HTML input[type="time"] tag
+     *
      * @param mixed $parameters
      * @return string
      */
@@ -536,6 +563,7 @@ class HTML
 
     /**
      * Builds a HTML input[type="week"] tag
+     *
      * @param mixed $parameters
      * @return string
      */
@@ -546,6 +574,7 @@ class HTML
 
     /**
      * Builds a HTML input[type="password"] tag
+     *
      * @param mixed $parameters
      * @return string
      */
@@ -556,6 +585,7 @@ class HTML
 
     /**
      * Builds a HTML input[type="hidden"] tag
+     *
      * @param mixed $parameters
      * @return string
      */
@@ -566,6 +596,7 @@ class HTML
 
     /**
      * Builds a HTML input[type="file"] tag
+     *
      * @param mixed $parameters
      * @return string
      */
@@ -576,6 +607,7 @@ class HTML
 
     /**
      * Builds a HTML input[type="search"] tag
+     *
      * @param mixed $parameters
      * @return string
      */
@@ -586,6 +618,7 @@ class HTML
 
     /**
      * Builds a HTML input[type="tel"] tag
+     *
      * @param mixed $parameters
      * @return string
      */
@@ -596,6 +629,7 @@ class HTML
 
     /**
      * Builds a HTML input[type="url"] tag
+     *
      * @param mixed $parameters
      * @return string
      */
@@ -606,6 +640,7 @@ class HTML
 
     /**
      * Builds a HTML input[type="check"] tag
+     *
      * @param mixed $parameters
      * @return string
      */
@@ -616,6 +651,7 @@ class HTML
 
     /**
      * Builds a HTML input[type="radio"] tag
+     *
      * @param mixed $parameters
      * @return string
      */
@@ -626,6 +662,7 @@ class HTML
 
     /**
      * Builds a HTML input[type="image"] tag
+     *
      * @param mixed $parameters
      * @return string
      */
@@ -636,6 +673,7 @@ class HTML
 
     /**
      * Builds a HTML input[type="button"] tag
+     *
      * @param mixed $parameters
      * @return string
      */
@@ -646,6 +684,7 @@ class HTML
 
     /**
      * Builds a HTML input[type="reset"] tag
+     *
      * @param mixed $parameters
      * @return string
      */
@@ -656,6 +695,7 @@ class HTML
 
     /**
      * Builds a HTML input[type="submit"] tag
+     *
      * @param mixed $parameters
      * @return string
      */
@@ -666,14 +706,14 @@ class HTML
 
     /**
      * Builds a HTML SELECT tag using a PHP array for options
+     *
      * @param mixed $parameters
-     * @param array $options
+     * @param array $data
      * @return string
      */
-    public static function select($parameters, $options)
+    public static function select($parameters, array $data)
     {
         $params = self::processFormElementParams($parameters);
-
 
         if (isset($params["value"])) {
             $value = $params["value"];
@@ -702,13 +742,14 @@ class HTML
             unset($params["useEmpty"]);
         }
 
+        unset($params[0]);
         $code = self::renderAttributes("<select", $params) . ">";
 
         if ($useEmpty) {
             $code .= "<option value=\"" . $emptyValue . "\">" . $emptyText . "</option>";
         }
 
-        $code .= self::optionsFromArray($options, $value, "</option>");
+        $code .= self::optionsFromArray($data, $value, "</option>");
         $code .= "</select>";
 
         return $code;
@@ -716,6 +757,7 @@ class HTML
 
     /**
      * Generate the OPTION tags based on an array
+     *
      * @param array $data
      * @param string $value
      * @param string $closeOption
@@ -723,7 +765,6 @@ class HTML
      */
     public static function optionsFromArray(array $data, $value, $closeOption)
     {
-
         $code = "";
 
         foreach ($data as $optionValue => $optionText) {
@@ -758,6 +799,7 @@ class HTML
 
     /**
      * Builds a HTML TEXTAREA tag
+     *
      * @param mixed $parameters
      * @return string
      */
@@ -774,6 +816,7 @@ class HTML
             $content = self::getValue($name, $params);
         }
 
+        unset($params[0]);
         $code = self::renderAttributes("<textarea", $params);
         $code .= ">" . $content . "</textarea>";
 
@@ -782,6 +825,7 @@ class HTML
 
     /**
      * Process the parameters for a form element
+     *
      * @param mixed $parameters
      * @return array
      */
@@ -866,6 +910,7 @@ class HTML
             $params["action"] = $action;
         }
 
+        unset($params[0]);
         $code = self::renderAttributes("<form", $params);
         $code .= ">";
 
@@ -874,6 +919,7 @@ class HTML
 
     /**
      * Builds a HTML close FORM tag
+     *
      * @return string
      */
     public static function endForm()
@@ -884,20 +930,22 @@ class HTML
 
     /**
      * Set the document type of content
-     * @param int $doctype
+     *
+     * @param int $docType
      * @return void
      */
-    public static function setDocType($doctype)
+    public static function setDocType($docType)
     {
-        if ($doctype < self::HTML32 || $doctype > self::XHTML5) {
+        if ($docType < self::HTML32 || $docType > self::XHTML5) {
             self::$documentType = self::HTML5;
         } else {
-            self::$documentType = $doctype;
+            self::$documentType = $docType;
         }
     }
 
     /**
      * Get the document type declaration of content
+     *
      * @return string
      */
     public static function getDocType()
@@ -946,7 +994,7 @@ class HTML
      *</code>
      *
      * @param string $tagName
-     * @param null $parameters
+     * @param mixed $parameters
      * @param bool $selfClose
      * @param bool $onlyStart
      * @param bool $useEol
@@ -955,50 +1003,52 @@ class HTML
      */
     public static function tag($tagName, $parameters = null, $selfClose = false, $onlyStart = false, $useEol = false)
     {
-        if (is_array($parameters)) {
+        if (is_null($parameters)) {
+            $params = [];
+        } elseif (is_array($parameters)) {
             $params = $parameters;
         } else {
             $params = [$parameters];
         }
 
-        $localCode = self::renderAttributes("<" . $tagName, $params);
+        $code = self::renderAttributes("<" . $tagName, $params);
 
         /**
          * Check if Doctype is XHTML
          */
         if (self::$documentType > self::HTML5) {
             if ($selfClose) {
-                $localCode .= " />";
+                $code .= " />";
             } else {
-                $localCode .= ">";
+                $code .= ">";
             }
         } else {
             if ($onlyStart) {
-                $localCode .= ">";
+                $code .= ">";
             } else {
-                $localCode .= "></" . $tagName . ">";
+                $code .= "></" . $tagName . ">";
             }
         }
 
         if ($useEol) {
-            $localCode .= PHP_EOL;
+            $code .= PHP_EOL;
         }
 
-        return $localCode;
+        return $code;
     }
 
     /**
      * Builds a HTML closing tag
      *
      *<code>
-     * echo HTML::tagClose("script", true)
+     * echo HTML::endTag("script", true)
      *</code>
      *
      * @param string $tagName
      * @param bool $useEol
      * @return string
      */
-    public static function tagClose($tagName, $useEol = false)
+    public static function endTag($tagName, $useEol = false)
     {
         if ($useEol) {
             return "</" . $tagName . ">" . PHP_EOL;

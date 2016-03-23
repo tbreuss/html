@@ -22,12 +22,12 @@ HTML::setDefaults($defaults);
 
 echo HTML::tag("pre");
 print_r($defaults);
-echo HTML::tagClose("pre");
+echo HTML::endTag("pre");
 
 if (!empty($_POST)) {
     echo HTML::tag("pre");
     print_r($_POST);
-    echo HTML::tagClose("pre");
+    echo HTML::endTag("pre");
 }
 
 echo HTML::form([$_SERVER["PHP_SELF"], "method" => "post"]);
@@ -39,5 +39,5 @@ echo HTML::select(["select[]", "multiple" => "1", "useEmpty" => true, "emptyValu
 echo HTML::submitButton(["submit"]) . HTML::tag("br");
 echo HTML::endForm();
 
-echo HTML::tagClose('body');
-echo HTML::tagClose('html');
+echo HTML::endTag('body');
+echo HTML::endTag('html');
