@@ -20,7 +20,8 @@ HTML::setDefaults([
     "dateTimeLocalField" => "2018-02-01T03:04",
     "color" => "#ff0000",
     "text" => "Text",
-    "select" => 4
+    "month" => "2016-03",
+    "select" => [2, 4]
 ]);
 
 echo HTML::form(["index.php", "method" => "post"]);
@@ -33,7 +34,6 @@ echo HTML::radioField(["radio", "value" => "yes"]) . HTML::radioField(["radio", 
 echo HTML::emailField(["email"]) . HTML::tag("br");
 echo HTML::fileField(["file"]) . HTML::tag("br");
 echo HTML::hiddenField(["hidden"]) . HTML::tag("br");
-echo HTML::imageInput(["image"]) . HTML::tag("br");
 echo HTML::monthField(["month"]) . HTML::tag("br");
 echo HTML::passwordField(["password"]) . HTML::tag("br");
 echo HTML::numberField(["number"]) . HTML::tag("br");
@@ -44,8 +44,13 @@ echo HTML::timeField(["time"]) . HTML::tag("br");
 echo HTML::textField(["text"]) . HTML::tag("br");
 echo HTML::textArea(["textArea"]) . HTML::tag("br");
 echo HTML::searchField(["search"]) . HTML::tag("br");
-echo HTML::select(["select", "useEmpty" => true, "emptyValue" => -1, "emptyText" => "Bitte wählen"], ["a", "b", "c", "d", "e", "f", "g"]) . HTML::tag("br");
+echo HTML::select(["select[]", "multiple" => "1", "useEmpty" => true, "emptyValue" => -1, "emptyText" => "Bitte wählen"], ["a", "b", "c", "d", "e", "f", "g"]) . HTML::tag("br");
+
+echo HTML::pushButton(["button"]) . HTML::tag("br");
+echo HTML::imageButton(["image"]) . HTML::tag("br");
 echo HTML::submitButton(["submit"]) . HTML::tag("br");
+echo HTML::resetButton(["reset"]) . HTML::tag("br");
+
 echo HTML::endForm();
 
 echo HTML::tagClose('body');
