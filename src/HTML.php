@@ -1,5 +1,7 @@
 <?php
 
+namespace Tebe;
+
 /**
  * Class HTML
  *

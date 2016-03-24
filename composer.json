@@ -1,0 +1,11 @@
+{
+  "name": "tebe/html",
+  "description": "A simple HTML class for php for creating html tags and form elements.",
+  "keywords": ["php", "html", "form"],
+  "license": "BSD-3-Clause",
+  "autoload": {
+    "psr-4": {
+      "Tebe\\": "src/"
+    }
+  }
+}
