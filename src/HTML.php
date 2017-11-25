@@ -56,7 +56,6 @@ class HTML
         }
 
         if ($autoescape) {
-
             if (is_null(self::$escaper)) {
                 // Register the default escaper
                 $callback = function ($attribute) {
@@ -64,7 +63,6 @@ class HTML
                 };
                 self::setEscaper($callback);
             }
-
         }
 
         return self::$escaper;
@@ -79,7 +77,9 @@ class HTML
     public static function setEscaper($callback)
     {
         if (is_null($callback)) {
-            $callback = function ($value) { return $value; };
+            $callback = function ($value) {
+                return $value;
+            };
         }
         if (!is_callable($callback)) {
             throw new Exception('Param $callback is not callable.');
@@ -114,7 +114,7 @@ class HTML
         }
 
         $escaperCallback = self::getEscaper($attributes);
-        unset ($attrs["escape"]);
+        unset($attrs["escape"]);
 
         $newCode = $code;
         foreach ($attrs as $key => $value) {
@@ -123,7 +123,8 @@ class HTML
             }
             if (is_string($key)) {
                 if (!is_scalar($value)) {
-                    throw new Exception("Value at index: '" . $key . "' type: '" . gettype($value) . "' cannot be rendered");
+                    $message = sprintf("Value at index: '%s' type: '%s' cannot be rendered", $key, gettype($value));
+                    throw new Exception($message);
                 }
                 $escaped = call_user_func($escaperCallback, $value);
                 $newCode .= " " . $key . "=\"" . $escaped . "\"";
@@ -165,7 +166,11 @@ class HTML
     public static function setDefault($name, $value)
     {
         if (!(is_scalar($value) || is_array($value))) {
-            throw new Exception("Only scalar and array values can be assigned to UI components (" . gettype($value) . " given).");
+            $message = sprintf(
+                "Only scalar and array values can be assigned to UI components (%s given).",
+                gettype($value)
+            );
+            throw new Exception($message);
         }
         if ($value !== null) {
             self::$defaults[$name] = $value;
@@ -223,20 +228,14 @@ class HTML
         $value = null;
 
         if (isset($params["value"])) {
-
             // an explicit element value
             $value = $params["value"];
-
         } elseif (!empty($_POST)) {
-
             // a POST value
             $value = self::resolveValue($name, $_POST);
-
         } else {
-
             // a previously set default value
             $value = self::resolveValue($name, self::$defaults);
-
         }
 
         return $value;
@@ -252,8 +251,8 @@ class HTML
     protected static function resolveValue($name, array $data)
     {
         if (($pos = strpos($name, '[')) !== false) {
-            if ($pos === 0) // [a]name[b][c], should ignore [a]
-            {
+            // [a]name[b][c], should ignore [a]
+            if ($pos === 0) {
                 if (preg_match('/\](\w+(\[.+)?)/', $name, $matches)) {
                     $name = $matches[1]; // we get: name[b][c]
                 }
@@ -312,7 +311,6 @@ class HTML
         }
 
         if ($asValue == false) {
-
             $name = $params[0] ?: null;
 
             if (is_null($name)) {
@@ -338,7 +336,6 @@ class HTML
             }
 
             $params["value"] = self::getValue($name, $params);
-
         } else {
             /**
              * Use the "id" as value if the user hadn't set it
@@ -409,7 +406,6 @@ class HTML
          * Automatically check inputs
          */
         if (isset($params["value"])) {
-
             $currentValue = $params["value"];
             unset($params["value"]);
 
@@ -419,9 +415,7 @@ class HTML
                 $params["checked"] = "checked";
             }
             $params["value"] = $currentValue;
-
         } else {
-
             $value = self::getValue($id, $params);
 
             /**
@@ -770,11 +764,14 @@ class HTML
         $code = "";
 
         foreach ($data as $optionValue => $optionText) {
-
             $escaped = htmlspecialchars($optionValue);
 
             if (is_array($optionText)) {
-                $code .= "<optgroup label=\"" . $escaped . "\">" . self::optionsFromArray($optionText, $value, $closeOption) . "</optgroup>";
+                $code .= sprintf(
+                    '<optgroup label="%s">%s</optgroup>',
+                    $escaped,
+                    self::optionsFromArray($optionText, $value, $closeOption)
+                );
                 continue;
             }
 
@@ -957,28 +954,36 @@ class HTML
                 return "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 3.2 Final//EN\">" . PHP_EOL;
 
             case 2:
-                return "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01//EN\"" . PHP_EOL . "\t\"http://www.w3.org/TR/html4/strict.dtd\">" . PHP_EOL;
+                return "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01//EN\"" . PHP_EOL
+                    . "\t\"http://www.w3.org/TR/html4/strict.dtd\">" . PHP_EOL;
 
             case 3:
-                return "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\"" . PHP_EOL . "\t\"http://www.w3.org/TR/html4/loose.dtd\">" . PHP_EOL;
+                return "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\"" . PHP_EOL
+                    . "\t\"http://www.w3.org/TR/html4/loose.dtd\">" . PHP_EOL;
 
             case 4:
-                return "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Frameset//EN\"" . PHP_EOL . "\t\"http://www.w3.org/TR/html4/frameset.dtd\">" . PHP_EOL;
+                return "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Frameset//EN\"" . PHP_EOL
+                    . "\t\"http://www.w3.org/TR/html4/frameset.dtd\">" . PHP_EOL;
 
             case 6:
-                return "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\"" . PHP_EOL . "\t\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">" . PHP_EOL;
+                return "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\"" . PHP_EOL
+                    . "\t\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">" . PHP_EOL;
 
             case 7:
-                return "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"" . PHP_EOL . "\t\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">" . PHP_EOL;
+                return "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"" . PHP_EOL
+                    . "\t\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">" . PHP_EOL;
 
             case 8:
-                return "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Frameset//EN\"" . PHP_EOL . "\t\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd\">" . PHP_EOL;
+                return "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Frameset//EN\"" . PHP_EOL
+                    . "\t\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd\">" . PHP_EOL;
 
             case 9:
-                return "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\"" . PHP_EOL . "\t\"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\">" . PHP_EOL;
+                return "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\"" . PHP_EOL
+                    . "\t\"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\">" . PHP_EOL;
 
             case 10:
-                return "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 2.0//EN\"" . PHP_EOL . "\t\"http://www.w3.org/MarkUp/DTD/xhtml2.dtd\">" . PHP_EOL;
+                return "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 2.0//EN\"" . PHP_EOL
+                    . "\t\"http://www.w3.org/MarkUp/DTD/xhtml2.dtd\">" . PHP_EOL;
 
             case 5:
             case 11:
@@ -1057,5 +1062,4 @@ class HTML
         }
         return "</" . $tagName . ">";
     }
-
 }
