@@ -24,7 +24,7 @@
       "phpunit",
       "phpcs"
     ],
-    "run": "php -S localhost:9999 -t example",
+    "run": "php -S localhost:9999 -t examples",
     "phpunit": "php vendor/bin/phpunit",
     "phpcs": "php vendor/bin/phpcs"
   }

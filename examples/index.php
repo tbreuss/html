@@ -4,6 +4,8 @@ ini_set('display_errors', 1);
 
 require(__DIR__ . '/../src/HTML.php');
 
+use Tebe\HTML;
+
 echo HTML::getDocType();
 echo HTML::tag("html");
 echo HTML::tag("body");
