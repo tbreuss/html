@@ -1,1 +1,4 @@
+/.idea
 /_internal
+/vendor
+composer.lock
