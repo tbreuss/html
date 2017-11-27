@@ -1,8 +1,8 @@
 <?php
 
-ini_set('display_errors', 1);
+ini_set("display_errors", 1);
 
-require(__DIR__ . '/../src/HTML.php');
+require(__DIR__ . "/../src/HTML.php");
 
 use Tebe\HTML;
 
@@ -41,5 +41,5 @@ echo HTML::select(["select[]", "multiple" => "1", "useEmpty" => true, "emptyValu
 echo HTML::submitButton(["submit"]) . HTML::tag("br");
 echo HTML::endForm();
 
-echo HTML::endTag('body');
-echo HTML::endTag('html');
+echo HTML::endTag("body");
+echo HTML::endTag("html");

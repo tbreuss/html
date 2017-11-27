@@ -1,8 +1,8 @@
 <?php
 
-ini_set('display_errors', 1);
+ini_set("display_errors", 1);
 
-require(__DIR__ . '/../src/HTML.php');
+require(__DIR__ . "/../src/HTML.php");
 
 use Tebe\HTML;
 
@@ -30,9 +30,9 @@ HTML::setDefaults([
 echo HTML::form(["index.php", "method" => "post"]);
 
 echo HTML::dateField(["date"]) . HTML::tag("br");
-echo HTML::dateTimeField(['dateTime']) . HTML::tag("br");
-echo HTML::colorField(['color']) . HTML::tag("br");
-echo HTML::dateTimeLocalField(['dateTimeLocal']) . HTML::tag("br");
+echo HTML::dateTimeField(["dateTime"]) . HTML::tag("br");
+echo HTML::colorField(["color"]) . HTML::tag("br");
+echo HTML::dateTimeLocalField(["dateTimeLocal"]) . HTML::tag("br");
 echo HTML::checkField(["check", "value" => "yes"]) . HTML::tag("br");
 echo HTML::radioField(["radio", "value" => "yes"]) . HTML::radioField(["radio", "value" => "no"]) . HTML::tag("br");
 echo HTML::emailField(["email"]) . HTML::tag("br");
@@ -57,5 +57,5 @@ echo HTML::resetButton(["reset"]) . HTML::tag("br");
 
 echo HTML::endForm();
 
-echo HTML::endTag('body');
-echo HTML::endTag('html');
+echo HTML::endTag("body");
+echo HTML::endTag("html");
