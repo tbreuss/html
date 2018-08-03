@@ -24,7 +24,7 @@ HTML::setDefaults([
     "text" => "Text",
     "month" => "2016-03",
     "select" => [2, 4],
-    "search" => "Das ist eine Suche"
+    "search" => "Search phrase"
 ]);
 
 echo HTML::form(["index.php", "method" => "post"]);
@@ -33,8 +33,9 @@ echo HTML::dateField(["date"]) . HTML::tag("br");
 echo HTML::dateTimeField(["dateTime"]) . HTML::tag("br");
 echo HTML::colorField(["color"]) . HTML::tag("br");
 echo HTML::dateTimeLocalField(["dateTimeLocal"]) . HTML::tag("br");
-echo HTML::checkField(["check", "value" => "yes"]) . HTML::tag("br");
-echo HTML::radioField(["radio", "value" => "yes"]) . HTML::radioField(["radio", "value" => "no"]) . HTML::tag("br");
+echo HTML::checkField(["check", "value" => "yes"]) . "Yes" . HTML::tag("br");
+echo HTML::radioField(["radio", "value" => "yes"]) . "Yes";
+echo HTML::radioField(["radio", "value" => "no"]) . "No" . HTML::tag("br");
 echo HTML::emailField(["email"]) . HTML::tag("br");
 echo HTML::fileField(["file"]) . HTML::tag("br");
 echo HTML::hiddenField(["hidden"]) . HTML::tag("br");
