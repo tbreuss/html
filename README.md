@@ -140,4 +140,7 @@ $ cd examples
 $ php -S localhost:9999
 ~~~
 
-And then open a web browser <http://localhost:9999>.
+And then open a web browser:
+
+- Simple form <http://localhost:9999/simple.php>
+- Form using arrray notation <http://localhost:9999/array.php>
