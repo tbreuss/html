@@ -1,6 +1,6 @@
 # HTML
 
-HTML is a Packaged that is designed to simplify building of HTML fragments. It is especially useful to build HTML forms.
+HTML is a package that is designed to simplify building of HTML fragments. It is especially useful to build HTML forms.
 
 The class provides a set of helpers to generate HTML in a dynamic way. It's an abstract class that you can extend to add more helpers.
 
